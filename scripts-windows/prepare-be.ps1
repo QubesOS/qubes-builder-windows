@@ -19,11 +19,12 @@ if (Test-Path $markerPath)
 
 $verbose = $env:VERBOSE -ne 0
 
-$builderDir = Join-Path $chrootDir ".." -Resolve # normalize path
+$builderDir = Join-Path $chrootDir ".." $env:SRC_DIR "builder_windows" -Resolve # normalize path
+$builderPluginDir = $env:WINDOWS_PLUGIN_DIR
 $depsDir = [System.IO.Path]::GetFullPath("$chrootDir\build-deps")
 
-$scriptDir = "$builderDir\scripts-windows"
-$prereqsDir = "$builderDir\windows-prereqs"  # place for downloaded installers/packages, they'll get copied/installed to proper chroots during the build process
+$scriptDir = "$builderPluginDir\scripts-windows"
+$prereqsDir = "$builderDir\cache\windows-prereqs"  # place for downloaded installers/packages, they'll get copied/installed to proper chroots during the build process
 $logDir = "$builderDir\build-logs"
 $msiToolsDir = "$scriptDir\msi-tools"
 $installedMsisFile = "$scriptDir\installed-msis" # guids/names of installed MSIs so we can easily uninstall them later (clean-be.ps1)
@@ -312,7 +313,7 @@ $mingwUnix = PathToUnix $mingw
 Copy-Item "$mingw\bin\gcc.exe" "$mingw\bin\cc.exe"
 
 # apply patch for bugged strsafe.h
-$patchPath = "$builderDir\windows-build-files\mingw-strsafe.patch"
+$patchPath = "$builderPluginDir\windows-build-files\mingw-strsafe.patch"
 Copy-Item $patchPath $chrootDir
 Push-Location
 Set-Location $chrootDir
@@ -371,7 +372,7 @@ $file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 
 # apply 64bit xdr patch
-Copy-Item "$builderDir\windows-build-files\portablexdr-4.9.1-64bit.patch" "$depsDir\portablexdr-4.9.1"
+Copy-Item "$builderPluginDir\windows-build-files\portablexdr-4.9.1-64bit.patch" "$depsDir\portablexdr-4.9.1"
 Push-Location
 Set-Location "$depsDir\portablexdr-4.9.1"
 & patch.exe "-i", "portablexdr-4.9.1-64bit.patch" | OutVerbose
@@ -405,7 +406,7 @@ Set-Location $pythonDir
 # copy lib to libs/
 Copy-Item "libpython27.dll.a" "libs/"
 # apply patch
-$patchPath = PathToUnix ([System.IO.Path]::GetFullPath("$builderDir\windows-build-files\python-mingw32.patch"))
+$patchPath = PathToUnix ([System.IO.Path]::GetFullPath("$builderPluginDir\windows-build-files\python-mingw32.patch"))
 & patch.exe "-p0", "-i", "$patchPath" | OutVerbose
 Pop-Location
 
@@ -448,7 +449,7 @@ Write-Host "[*] Installing lockfile..."
 & "$pythonDir\Scripts\easy_install.exe" lockfile | OutVerbose
 
 # copy python-config. it uses PYTHON_DIR variable to determine python install location
-Copy-Item "$builderDir\windows-build-files\python-config" $pythonDir
+Copy-Item "$builderPluginDir\windows-build-files\python-config" $pythonDir
 
 # add dummy files required by installers if not already existing
 New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" -ErrorAction SilentlyContinue | Out-Null
