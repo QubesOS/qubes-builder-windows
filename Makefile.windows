@@ -3,8 +3,10 @@
 # For "API" documentation check Makefile.generic
 #
 # Variables supposed to be in component's Makefile.builder:
-#  WIN_COMPILER - "WDK" (default), "mingw" or "custom"
+#  WIN_COMPILER - "WDK" (default), "mingw", "msbuild" or "custom"
 #  WIN_BUILD_CMD - build command for "custom" WIN_COMPILER
+#  WIN_SLN_DIR - directory with *.sln file for msbuild (default "vs2013")
+#  WIN_SLN_NAME - *.sln file for msbuild (default "$(COMPONENT).sln")
 #  WIN_SOURCE_SUBDIRS - list of spec files to build
 #  WIN_PREBUILD_CMD - commands to run before build process
 #  WIN_SIGN_CMD
@@ -34,6 +36,7 @@ WIN_PREBUILD_CMD ?= true
 ### Settings: defaults, to be overriden by builder.conf
 
 DDK_PATH ?= C:\\WinDDK\\7600.16385.1
+VS_PATH ?= c:\\Program Files \(x86\)\\Microsoft Visual Studio 12.0
 
 # Build type: fre (release), chk (debug)
 WIN_BUILD_TYPE ?= fre
@@ -95,13 +98,32 @@ endif
 ifeq ($(WIN_COMPILER),WDK)
 SETENV_ARGS = $(DDK_PATH) $(WIN_BUILD_TYPE) $(DDK_ARCH) $(DDK_DIST)
 SETENV_CMD = $(DDK_PATH)\\bin\\setenv.bat $(SETENV_ARGS)
-
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
+
 else ifeq ($(WIN_COMPILER),custom)
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
+
+else ifeq ($(WIN_COMPILER),msbuild)
+WIN_SLN_DIR ?= vs2013
+WIN_SLN_NAME ?= "$(COMPONENT).sln"
+ifeq ($(DDK_ARCH),x64)
+MSBUILD_ARCH = x64
+else
+MSBUILD_ARCH = Win32
+endif
+ifeq ($(WIN_BUILD_TYPE),fre)
+MSBUILD_CONFIG = Release
+else
+MSBUILD_CONFIG = Debug
+endif
+SETENV_CMD = "$(VS_PATH)\\VC\\vcvarsall.bat" x86
+PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
+PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
+PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
+
 else
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
@@ -171,10 +193,24 @@ else
 endif
 ifeq ($(WIN_COMPILER),WDK)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
-		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
+        cmd //C "$(PREBUILD_ACTUAL_CMD) && \
+        build -cZg && \
+        $(WIN_SIGN_CMD) && \
+        $(WIN_PACKAGE_CMD)"
+else ifeq ($(WIN_COMPILER),msbuild)
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
+        cmd //C "$(PREBUILD_ACTUAL_CMD) && \
+        cd $(WIN_SLN_DIR) && \
+        msbuild.exe /m:1 /p:Configuration="$(MSBUILD_CONFIG)" /p:Platform="$(MSBUILD_ARCH)" /t:"Build" $(WIN_SLN_NAME) && \
+        cd .. && \
+        $(WIN_SIGN_CMD) && \
+        $(WIN_PACKAGE_CMD)"
 else ifeq ($(WIN_COMPILER),custom)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
-    cmd //C "$(PREBUILD_ACTUAL_CMD) && $(WIN_BUILD_CMD) && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
+        cmd //C "$(PREBUILD_ACTUAL_CMD) && \
+        $(WIN_BUILD_CMD) && \
+        $(WIN_SIGN_CMD) && \
+        $(WIN_PACKAGE_CMD)"
 else
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && PATH="$(WIN_PATH)" make all
