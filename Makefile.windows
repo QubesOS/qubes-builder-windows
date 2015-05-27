@@ -3,7 +3,8 @@
 # For "API" documentation check Makefile.generic
 #
 # Variables supposed to be in component's Makefile.builder:
-#  WIN_COMPILER - "WDK" (default) or "mingw"
+#  WIN_COMPILER - "WDK" (default), "mingw" or "custom"
+#  WIN_BUILD_CMD - build command for "custom" WIN_COMPILER
 #  WIN_SOURCE_SUBDIRS - list of spec files to build
 #  WIN_PREBUILD_CMD - commands to run before build process
 #  WIN_SIGN_CMD
@@ -98,11 +99,13 @@ SETENV_CMD = $(DDK_PATH)\\bin\\setenv.bat $(SETENV_ARGS)
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
+else ifeq ($(WIN_COMPILER),custom)
+PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
+PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
 else
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
 endif
-
 
 # Set this way to have them converted to windows paths by msys
 QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W)
@@ -169,6 +172,9 @@ endif
 ifeq ($(WIN_COMPILER),WDK)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
 		cmd //C "$(PREBUILD_ACTUAL_CMD) && build -cZg && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
+else ifeq ($(WIN_COMPILER),custom)
+	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
+    cmd //C "$(PREBUILD_ACTUAL_CMD) && $(WIN_BUILD_CMD) && $(WIN_SIGN_CMD) && $(WIN_PACKAGE_CMD)"
 else
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && PATH="$(WIN_PATH)" make all
