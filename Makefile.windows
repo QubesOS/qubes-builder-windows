@@ -119,7 +119,7 @@ MSBUILD_CONFIG = Release
 else
 MSBUILD_CONFIG = Debug
 endif
-SETENV_CMD = "$(VS_PATH)\\VC\\vcvarsall.bat" x86
+SETENV_CMD = $(VS_PATH)\\VC\\vcvarsall.bat x86
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
