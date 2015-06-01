@@ -6,9 +6,9 @@
 # This is intended as a base/clean environment. Component-specific scripts may copy it and modify according to their requirements.
 
 Param(
-    $builder,            # [optional] If specified, path to existing qubes-builder.
-    [switch] $verify,    # [optional] Verify qubes-builder tags.
-    $GIT_SUBDIR = "omeg" # [optional] Same as in builder.conf
+    $builder,               # [optional] If specified, path to existing qubes-builder.
+    [switch] $verify,       # [optional] Verify qubes-builder tags.
+    $GIT_SUBDIR = "QubesOS" # [optional] Same as in builder.conf
 )
 
 Function IsAdministrator()
@@ -193,7 +193,7 @@ Move-Item (Join-Path $msysDir "mingw64") (Join-Path $msysDir "mingw")
 if (! $builder)
 {
     # fetch qubes-builder off the repo
-    $repo = "git://git.qubes-os.org/$GIT_SUBDIR/qubes-builder.git"
+    $repo = "git://github.com/$GIT_SUBDIR/qubes-builder.git"
     $builderDir = Join-Path $scriptDir "qubes-builder"
     Write-Host "[*] Cloning qubes-builder to $builderDir"
     & (Join-Path $msysDir "bin\git.exe") "clone", $repo, $builderDir | Out-Host
