@@ -13,6 +13,8 @@
 #    the default script signs all *.dll and *.exe files
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
 #    the default script builds "installer.wxs" file with Wix
+#  WIN_PACKAGE_EXT - desired extension of the installer output
+#    "msi" (final installer package) or "msm" (merge module, default)
 #  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
 #    relative to $(PACKAGE)
 #  WIN_OUTPUT_HEADERS - directory with includes for $(WIN_OUTPUT_LIBS),
@@ -35,8 +37,9 @@ DIST_BUILD_DIR = .
 
 WIN_COMPILER ?= WDK
 WIN_SIGN_CMD ?= call $(WINDOWS_SCRIPTS)/sign.bat
-WIN_PACKAGE_CMD ?= call $(WINDOWS_SCRIPTS)/wix.bat
+WIN_PACKAGE_CMD ?= call $(WINDOWS_SCRIPTS)/wix.bat $(WIN_PACKAGE_EXT)
 WIN_PREBUILD_CMD ?= true
+WIN_PACKAGE_EXT ?= msm
 
 ### Settings: defaults, to be overriden by builder.conf
 
