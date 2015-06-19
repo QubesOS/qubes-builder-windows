@@ -9,6 +9,8 @@
 #  WIN_SLN_NAME - *.sln file for msbuild (default "$(COMPONENT).sln")
 #  WIN_SOURCE_SUBDIRS - list of directories to process
 #  WIN_PREBUILD_CMD - commands to run before build process
+#  WIN_POSTBUILD_CMD - commands to run after build process
+#    (after WIN_PACKAGE_CMD)
 #  WIN_SIGN_CMD - command to sign executables
 #    the default script signs all *.dll and *.exe files
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
@@ -39,6 +41,7 @@ WIN_COMPILER ?= WDK
 WIN_SIGN_CMD ?= call $(WINDOWS_SCRIPTS)/sign.bat
 WIN_PACKAGE_CMD ?= call $(WINDOWS_SCRIPTS)/wix.bat $(WIN_PACKAGE_EXT)
 WIN_PREBUILD_CMD ?= true
+WIN_POSTBUILD_CMD ?= true
 WIN_PACKAGE_EXT ?= msm
 
 ### Settings: defaults, to be overriden by builder.conf
@@ -207,7 +210,8 @@ ifeq ($(WIN_COMPILER),WDK)
         cmd //C "$(PREBUILD_ACTUAL_CMD) && \
         build -cZg && \
         $(WIN_SIGN_CMD) && \
-        $(WIN_PACKAGE_CMD)"
+        $(WIN_PACKAGE_CMD) && \
+        $(WIN_POSTBUILD_CMD)"
 else ifeq ($(WIN_COMPILER),msbuild)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
         cmd //C "$(PREBUILD_ACTUAL_CMD) && \
@@ -215,13 +219,15 @@ else ifeq ($(WIN_COMPILER),msbuild)
         msbuild.exe /m:1 /p:Configuration="$(MSBUILD_CONFIG)" /p:Platform="$(MSBUILD_ARCH)" /t:"Build" $(WIN_SLN_NAME) && \
         cd .. && \
         $(WIN_SIGN_CMD) && \
-        $(WIN_PACKAGE_CMD)"
+        $(WIN_PACKAGE_CMD) && \
+        $(WIN_POSTBUILD_CMD)"
 else ifeq ($(WIN_COMPILER),custom)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
         cmd //C "$(PREBUILD_ACTUAL_CMD) && \
         $(WIN_BUILD_CMD) && \
         $(WIN_SIGN_CMD) && \
-        $(WIN_PACKAGE_CMD)"
+        $(WIN_PACKAGE_CMD) && \
+        $(WIN_POSTBUILD_CMD)"
 else
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(PREBUILD_ACTUAL_CMD)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && PATH="$(WIN_PATH)" make all
