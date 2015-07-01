@@ -2,7 +2,7 @@
 #
 # If launched outside of existing qubes-builder, clones it to current directory.
 # Existing qubes-builder location may be specified via `-builder <path>' option.
-# Build environment is contained in 'msys' directory created in qubes-builder/windows-prereqs. It also contains mingw64.
+# Build environment is contained in 'msys' directory created in qubes-builder/cache/windows-prereqs. It also contains mingw64.
 # This is intended as a base/clean environment. Component-specific scripts may copy it and modify according to their requirements.
 
 Param(
@@ -137,10 +137,10 @@ else # check if we're invoked from existing qubes-builder
 {
     $curDir = Split-Path $scriptDir -Leaf
     $makefilePath = Join-Path (Join-Path $scriptDir "..") "Makefile.windows" -Resolve -ErrorAction SilentlyContinue
-    if (($curDir -eq "scripts-windows") -and (Test-Path -Path $makefilePath))
+    if (($curDir -eq "scripts") -and (Test-Path -Path $makefilePath))
     {
         $builder = $true # don't clone builder later
-        $builderDir = Join-Path $scriptDir ".." -Resolve
+        $builderDir = Join-Path $scriptDir "..\..\.." -Resolve
 
         $logFilePath = Join-Path (Join-Path $builderDir "build-logs") "win-initialize-be.log"
         Start-Transcript -Path $logFilePath
@@ -154,9 +154,9 @@ else # check if we're invoked from existing qubes-builder
     }
 }
 
-if ($builder -and (Test-Path (Join-Path $builderDir "windows-prereqs\msys")))
+if ($builder -and (Test-Path (Join-Path $builderDir "cache\windows-prereqs\msys")))
 {
-    Write-Host "[=] BE seems already initialized, delete windows-prereqs\msys if you want to rerun this script."
+    Write-Host "[=] BE seems already initialized, delete cache\windows-prereqs\msys if you want to rerun this script."
     Exit 0
 }
 
@@ -199,10 +199,10 @@ if (! $builder)
     & (Join-Path $msysDir "bin\git.exe") "clone", $repo, $builderDir | Out-Host
 }
 
-$prereqsDir = Join-Path $builderDir "windows-prereqs"
+$prereqsDir = Join-Path $builderDir "cache\windows-prereqs"
 Write-Host "[*] Moving msys to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
-# move msys/mingw to qubes-builder/windows-prereqs, this will be the default "clean" environment
+# move msys/mingw to qubes-builder/cache/windows-prereqs, this will be the default "clean" environment
 Move-Item $msysDir $prereqsDir
 Move-Item $7zip $prereqsDir -Force
 $msysDir = Join-Path $prereqsDir "msys" # update
