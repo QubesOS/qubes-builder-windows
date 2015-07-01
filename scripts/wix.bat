@@ -26,8 +26,8 @@ set FILENAME=%1
 
 set MSINAME=%FILENAME%%MSISUFFIX%
 
-"%WIX%\candle" %FILENAME%.wxs -arch %MSIARCH% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll"
-"%WIX%\light.exe" -o %MSINAME% %FILENAME%.wixobj %DIFXLIB% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll"
+"%WIX%\candle" %FILENAME%.wxs -arch %MSIARCH% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll"
+"%WIX%\light.exe" -o %MSINAME% %FILENAME%.wixobj %DIFXLIB% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll"
 
 :: FIXME: This is not an ideal way to check for errors because the output file may be created
 :: even if wix fails to merge something in. We can't rely on wix warnings (errorlevel) because
