@@ -148,7 +148,7 @@ QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/libs && cd $(CHROOT_DIR)/
 TMP := $(shell cd $(TMP) && pwd -W | sed 's:/:\\\\:g')
 TEMP := $(TMP)
 
-SIGNTOOL := $(DDK_PATH)/bin/x86/signtool.exe
+SIGNTOOL := "$(WDK8_PATH)\bin\$(DDK_ARCH)\signtool.exe"
 
 ### Targets required by Makefile.generic to build packages
 dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
