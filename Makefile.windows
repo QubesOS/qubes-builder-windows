@@ -3,7 +3,7 @@
 # For "API" documentation check Makefile.generic
 #
 # Variables supposed to be in component's Makefile.builder:
-#  WIN_COMPILER - "WDK" (default), "mingw", "msbuild" or "custom"
+#  WIN_COMPILER - "WDK", "mingw", "msbuild" (default) or "custom"
 #  WIN_BUILD_CMD - build command for "custom" WIN_COMPILER
 #  WIN_SLN_DIR - directory with *.sln file for msbuild (default "vs2013")
 #  WIN_SLN_NAME - *.sln file for msbuild (default "$(COMPONENT).sln")
@@ -37,7 +37,7 @@ DIST_BUILD_DIR = .
 
 ### Settings: defaults, to be overriden by Makefile.builder
 
-WIN_COMPILER ?= WDK
+WIN_COMPILER ?= msbuild
 WIN_SIGN_CMD ?= call $(WINDOWS_SCRIPTS)/sign.bat
 WIN_PACKAGE_CMD ?= call $(WINDOWS_SCRIPTS)/wix.bat $(WIN_PACKAGE_EXT)
 WIN_PREBUILD_CMD ?= true
