@@ -13,4 +13,5 @@ And that's it. The builder will prepare the rest of the environment during the f
 See windows-tools.conf for an example builder config.
 
 [1] https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx
+
 [2] https://www.microsoft.com/en-us/download/details.aspx?id=42273
