@@ -12,7 +12,7 @@
 #  WIN_POSTBUILD_CMD - commands to run after build process
 #    (after WIN_PACKAGE_CMD)
 #  WIN_SIGN_CMD - command to sign executables
-#    the default script signs all *.dll and *.exe files
+#    the default script signs all dll, exe, msi, sys and cat files
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
 #    the default script builds "installer.wxs" file with Wix
 #  WIN_PACKAGE_EXT - desired extension of the installer output
