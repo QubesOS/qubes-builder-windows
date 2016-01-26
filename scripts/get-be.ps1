@@ -303,6 +303,15 @@ Add-Content (Join-Path $msysDir "etc\profile") "`n$cmd"
 Write-Host "[*] Adding shortcuts to msys..."
 CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
 
+# generate code signing certificate
+Write-Host "[*] Generating code-signing certificate (use no password)..."
+$wdkKey = "HKLM:SOFTWARE\Microsoft\Windows Kits\Installed Roots"
+$wdkPath = (Get-ItemProperty -Path $wdkKey).KitsRoot81
+$wdkPath = Join-Path $wdkPath "bin\x64\"
+echo $wdkPath
+& $wdkPath\makecert.exe -sv $builderDir\qwt.pvk -n "CN=Qubes Test Cert" $builderDir\qwt.cer -r
+& $wdkPath\pvk2pfx.exe -pvk $builderDir\qwt.pvk -spc $builderDir\qwt.cer -pfx $builderDir\qwt.pfx
+
 # cleanup
 Write-Host "[*] Cleanup"
 Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
