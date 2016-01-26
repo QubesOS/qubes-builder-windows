@@ -225,9 +225,11 @@ $prereqsDir = Join-Path $builderDir "cache\windows-prereqs"
 Write-Host "[*] Moving msys to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
 # move msys/mingw to qubes-builder/cache/windows-prereqs, this will be the default "clean" environment
-Move-Item $msysDir $prereqsDir
-Move-Item $7zip $prereqsDir -Force
-$msysDir = Join-Path $prereqsDir "msys" # update
+# copy instead of move, sometimes windows defender locks executables for a while
+Copy-Item -Path $msysDir -Destination $prereqsDir -Recurse
+Copy-Item -Path $7zip -Destination $prereqsDir
+# update msys path
+$msysDir = Join-Path $prereqsDir "msys"
 
 if ($verify)
 {
