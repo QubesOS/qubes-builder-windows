@@ -273,7 +273,7 @@ if ($verify)
 	$pkgName = "qubes dev keys"
 	$url = "http://keys.qubes-os.org/keys/qubes-developers-keys.asc"
 	$file = DownloadFile $url
-	VerifyFile $file "bfaa2864605218a2737f0dc39d4dfe08720d436a"
+	VerifyFile $file "0c2dc8b2a6fccaf956f619ac13532ffb56f3d028"
 
 	& $gpg --import $file
 
