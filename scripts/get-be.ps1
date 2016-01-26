@@ -218,7 +218,8 @@ if (! $builder)
     $repo = "git://github.com/$GIT_SUBDIR/qubes-builder.git"
     $builderDir = Join-Path $scriptDir "qubes-builder"
     Write-Host "[*] Cloning qubes-builder to $builderDir"
-    & (Join-Path $msysDir "bin\git.exe") "clone", $repo, $builderDir | Out-Host
+    $gitPath = Join-Path $msysDir "bin\git.exe"
+    & $gitPath clone $repo $builderDir
 }
 
 $prereqsDir = Join-Path $builderDir "cache\windows-prereqs"
