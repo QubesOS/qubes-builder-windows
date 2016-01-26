@@ -28,9 +28,10 @@
 
 Param(
     $builder,               # [optional] If specified, path to existing qubes-builder.
-    [switch] $verify,       # [optional] Verify qubes-builder tags.
     $GIT_SUBDIR = "QubesOS" # [optional] Same as in builder.conf
 )
+
+$verify = $true
 
 Function IsAdministrator()
 {
