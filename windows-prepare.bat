@@ -1,1 +1,1 @@
-powershell -executionpolicy bypass scripts/get-be.ps1
+powershell -executionpolicy bypass -f scripts/get-be.ps1
