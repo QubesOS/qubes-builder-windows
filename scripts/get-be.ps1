@@ -271,11 +271,7 @@ if ($verify)
 	& $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x36879494
 
 	# import other dev keys
-	$pkgName = "qubes dev keys"
-	$url = "http://keys.qubes-os.org/keys/qubes-developers-keys.asc"
-	$file = DownloadFile $url
-	VerifyFile $file "0c2dc8b2a6fccaf956f619ac13532ffb56f3d028"
-
+	$file = Join-Path $builderDir "qubes-developers-keys.asc"
 	& $gpg --import $file
 
 	# add gpg and msys to PATH
