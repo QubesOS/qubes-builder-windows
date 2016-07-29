@@ -14,7 +14,7 @@
 #  WIN_SIGN_CMD - command to sign executables
 #    the default script signs all dll, exe, msi, sys and cat files
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
-#    the default script builds "installer.wxs" file with Wix
+#    the default script builds all .wxs files with Wix
 #  WIN_PACKAGE_EXT - desired extension of the installer output
 #    "msi" (final installer package) or "msm" (merge module, default)
 #  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
