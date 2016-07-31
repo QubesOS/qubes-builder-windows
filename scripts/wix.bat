@@ -49,7 +49,7 @@ set MSIOUT=%MSINAME%.exe
 "%WIX%\candle" %FILENAME%.wxb -arch %MSIARCH% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixBalExtension.dll"
 "%WIX%\light" -o %MSIOUT% %FILENAME%.wixobj -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixBalExtension.dll"
 
-if not "%CERT_FILENAME%"="" (
+if not "%CERT_FILENAME%"=="" (
     :: Sign the bundle engine if we're signing stuff, otherwise installation will fail during payload extraction.
     "%WIX%\insignia" -ib %MSIOUT% -o engine.exe
     %SIGNTOOL% sign /v %CERT_CROSS_CERT_FLAG% /f "%CERT_FILENAME%" %CERT_PASSWORD_FLAG% /t http://timestamp.verisign.com/scripts/timestamp.dll engine.exe
