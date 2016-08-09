@@ -54,6 +54,7 @@ if not "%CERT_FILENAME%"=="" (
     "%WIX%\insignia" -ib %MSIOUT% -o engine.exe
     %SIGNTOOL% sign /v %CERT_CROSS_CERT_FLAG% /f "%CERT_FILENAME%" %CERT_PASSWORD_FLAG% /t http://timestamp.verisign.com/scripts/timestamp.dll engine.exe
     "%WIX%\insignia" -ab engine.exe %MSIOUT% -o %MSIOUT%
+    del engine.exe
 )
 
 :: FIXME: This is not an ideal way to check for errors because the output file may be created
