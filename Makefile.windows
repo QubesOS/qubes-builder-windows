@@ -149,7 +149,8 @@ QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/libs && cd $(CHROOT_DIR)/
 TMP := $(shell cd $(TMP) && pwd -W | sed 's:/:\\\\:g')
 TEMP := $(TMP)
 
-SIGNTOOL := "$(WDK8_PATH)\bin\$(DDK_ARCH)\signtool.exe"
+SIGNTOOL := "$(shell find "$(WDK10_PATH)" "$(WDK8_PATH)" "$(DDK_PATH)" -path "*/$(DDK_ARCH)/signtool.exe" 2>/dev/null |head -1)"
+MAKECERT := "$(shell find "$(WDK10_PATH)" "$(WDK8_PATH)" "$(DDK_PATH)" -path "*/$(DDK_ARCH)/makecert.exe" 2>/dev/null |head -1)"
 
 ### Targets required by Makefile.generic to build packages
 dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
@@ -164,7 +165,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
 	$(eval PYTHON3 := $(shell sed -n '5p' $(BE_MARKER)))
 ifneq ($(CERT_FILENAME),)
 	@if [ ! -r "$(CERT_FILENAME)" ]; then \
-		"$(DDK_PATH)"/bin/x86/makecert -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
+		$(MAKECERT) -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
 		certutil -exportpfx -user -privatekey $(CERT_PASSWORD_FLAG) PrivateCertStore "Qubes Test Cert" "$(CERT_FILENAME)"; \
 	fi
 endif
