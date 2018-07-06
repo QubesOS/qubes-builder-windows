@@ -185,6 +185,8 @@ endif
 
 
 dist-build-dep:
+	@rm -rf $(CHROOT_DIR)/build-deps/libs
+	@rm -rf $(CHROOT_DIR)/build-deps/include
 	@mkdir -p $(CHROOT_DIR)/build-deps/libs
 	@mkdir -p $(CHROOT_DIR)/build-deps/include
 	@for dep in $(WIN_BUILD_DEPS); do \
