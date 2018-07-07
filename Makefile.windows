@@ -132,7 +132,7 @@ MSBUILD_CONFIG = Release
 else
 MSBUILD_CONFIG = Debug
 endif
-SETENV_CMD = $(VS_PATH)\\VC\\vcvarsall.bat x86
+SETENV_CMD = "$(VS_PATH)\\VC\\Auxiliary\\Build\\vcvarsall.bat" x86
 PREBUILD_ACTUAL_CMD := set MAKEFLAGS=
 PREBUILD_ACTUAL_CMD += && pushd . && $(WIN_PREBUILD_CMD) && popd
 PREBUILD_ACTUAL_CMD += && pushd . && $(SETENV_CMD) && popd
@@ -198,6 +198,7 @@ dist-build-dep:
 		fi; \
 	done
 
+dist-package: SCRIPT_TMP=$(TEMP)/build-$(COMPONENT).bat
 dist-package:
 ifndef PACKAGE
 	$(error "PACKAGE need to be set!")
@@ -211,20 +212,20 @@ endif
 
 ifeq ($(WIN_COMPILER),WDK)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
-        cmd //C "$(PREBUILD_ACTUAL_CMD) && \
+        cmd //C '$(PREBUILD_ACTUAL_CMD) && \
         build -cZg && \
         $(WIN_SIGN_CMD) && \
         $(WIN_PACKAGE_CMD) && \
-        $(WIN_POSTBUILD_CMD)"
+        $(WIN_POSTBUILD_CMD)'
 else ifeq ($(WIN_COMPILER),msbuild)
-	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
-        cmd //C "$(PREBUILD_ACTUAL_CMD) && \
-        cd $(WIN_SLN_DIR) && \
-        msbuild.exe /m:1 /p:Configuration="$(MSBUILD_CONFIG)" /p:Platform="$(MSBUILD_ARCH)" /t:"Build" $(WIN_SLN_NAME) && \
-        cd .. && \
-        $(WIN_SIGN_CMD) && \
-        $(WIN_PACKAGE_CMD) && \
-        $(WIN_POSTBUILD_CMD)"
+	printf %s '$(PREBUILD_ACTUAL_CMD) && ' >$(SCRIPT_TMP)
+	printf %s 'cd $(WIN_SLN_DIR) && ' >>$(SCRIPT_TMP)
+	printf %s 'msbuild.exe /m:1 /p:Configuration="$(MSBUILD_CONFIG)" /p:Platform="$(MSBUILD_ARCH)" /t:"Build" $(WIN_SLN_NAME) && ' >>$(SCRIPT_TMP)
+	printf %s 'cd .. && ' >>$(SCRIPT_TMP)
+	printf %s '$(WIN_SIGN_CMD) && ' >>$(SCRIPT_TMP)
+	printf %s '$(WIN_PACKAGE_CMD) && ' >>$(SCRIPT_TMP)
+	printf %s '$(WIN_POSTBUILD_CMD)' >> $(SCRIPT_TMP)
+	cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && $(SCRIPT_TMP)
 else ifeq ($(WIN_COMPILER),custom)
 	@cd $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE) && \
         cmd //C "$(PREBUILD_ACTUAL_CMD) && \
