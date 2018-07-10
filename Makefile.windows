@@ -69,7 +69,7 @@ ifneq (,$(findstring x64,$(DIST)))
 DDK_ARCH = x64
 DIST_TMP = $(subst x64,,$(DIST))
 else ifneq (,$(findstring x86,$(DIST)))
-DDK_ARCH =
+DDK_ARCH = x86
 DIST_TMP = $(subst x86,,$(DIST))
 else
 $(error unsupported architecture: $(DIST))
