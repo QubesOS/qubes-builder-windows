@@ -49,6 +49,7 @@ WIN_PACKAGE_EXT ?= msm
 
 DDK_PATH ?= C:\\WinDDK\\7600.16385.1
 WDK8_PATH ?= c:\Program Files (x86)\Windows Kits\8.1
+WDK10_PATH ?= c:\Program Files (x86)\Windows Kits\10
 VS_PATH ?= c:\\Program\ Files\ \(x86\)\\Microsoft\ Visual\ Studio\ 12.0
 
 # Build type: fre (release), chk (debug)
