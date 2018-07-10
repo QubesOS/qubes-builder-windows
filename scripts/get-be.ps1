@@ -304,10 +304,12 @@ CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
 Write-Host "[*] Generating code-signing certificate (use no password)..."
 $wdkKey = "HKLM:SOFTWARE\Microsoft\Windows Kits\Installed Roots"
 $wdkPath = (Get-ItemProperty -Path $wdkKey).KitsRoot81
+$makecertPath = $(GetChildItem -Path $wdkPath -Filter makecert.exe -Recurse)
+$pvk2pfxPath = $(GetChildItem -Path $wdkPath -Filter pvk2pfx.exe -Recurse)
 $wdkPath = Join-Path $wdkPath "bin\x64\"
 echo $wdkPath
-& $wdkPath\makecert.exe -sv $builderDir\qwt.pvk -n "CN=Qubes Test Cert" $builderDir\qwt.cer -r
-& $wdkPath\pvk2pfx.exe -pvk $builderDir\qwt.pvk -spc $builderDir\qwt.cer -pfx $builderDir\qwt.pfx
+& $makecertPath -sv $builderDir\qwt.pvk -n "CN=Qubes Test Cert" $builderDir\qwt.cer -r
+& $pvk2pfxPath -pvk $builderDir\qwt.pvk -spc $builderDir\qwt.cer -pfx $builderDir\qwt.pfx
 
 # cleanup
 Write-Host "[*] Cleanup"
