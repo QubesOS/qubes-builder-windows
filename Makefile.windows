@@ -165,7 +165,7 @@ dist-prepare-chroot: $(CHROOT_DIR)/.be-prepared
 	$(eval PYTHON3 := $(shell sed -n '5p' $(BE_MARKER)))
 ifneq ($(CERT_FILENAME),)
 	@if [ ! -r "$(CERT_FILENAME)" ]; then \
-		$(MAKECERT) -r -pe -ss PrivateCertStore -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
+		$(MAKECERT) -r -pe -ss PrivateCertStore -a sha256 -n "CN=Qubes Test Cert" "$(CERT_PUBLIC_FILENAME)"; \
 		certutil -exportpfx -user -privatekey $(CERT_PASSWORD_FLAG) PrivateCertStore "Qubes Test Cert" "$(CERT_FILENAME)"; \
 	fi
 endif
