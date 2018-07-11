@@ -11,10 +11,10 @@ goto :END
 :sign
 
 :: don't sign again if already properly signed
-%SIGNTOOL% verify /pa "%1"
+%SIGNTOOL% verify /pa %1
 if not errorlevel 1 goto :eof
 
-%SIGNTOOL% sign /v %CERT_CROSS_CERT_FLAG% /f "%CERT_FILENAME%" %CERT_PASSWORD_FLAG% /tr http://timestamp.digicert.com /td sha256 /fd sha256 "%1"
+%SIGNTOOL% sign /v %CERT_CROSS_CERT_FLAG% /f "%CERT_FILENAME%" %CERT_PASSWORD_FLAG% /tr http://timestamp.digicert.com /td sha256 /fd sha256 %1
 :: return
 goto :eof
 
