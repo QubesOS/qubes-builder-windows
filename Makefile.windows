@@ -242,6 +242,7 @@ endif
 
 dist-copy-out:
 	@echo "--> Done:" >&3
+	@rm -rf "$(BUILDER_REPO_DIR)/$(COMPONENT)"
 ifneq ($(WIN_PACKAGE_CMD),true)
 	@shopt -s nullglob;\
 	for pkg in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.ms[im] $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/*.exe; do\
