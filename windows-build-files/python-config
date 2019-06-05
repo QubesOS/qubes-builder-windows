@@ -6,7 +6,7 @@ prefix=$PYTHON_DIR
 while [ "$1" ]; do 
     case "$1" in
         --libs|--ldflags)
-            echo "-L$prefix/libs -lpython27"
+            echo "-L$prefix/lib -lpython27"
             ;;
         --includes|--cflags)
             #if [ "$PROCESSOR_ARCHITEW6432" == "AMD64" ]; then

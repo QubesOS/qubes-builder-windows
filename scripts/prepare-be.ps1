@@ -303,7 +303,7 @@ DownloadAll
 
 # delete existing stuff
 Write-Host "[*] Clearing $depsDir..."
-Remove-Item $depsDir\* -Recurse -Force -Exclude ("include", "libs")
+Remove-Item $depsDir\* -Recurse -Force -Exclude ("include", "lib")
 
 Write-Host "`n[*] Processing dependencies..."
 
@@ -429,8 +429,8 @@ if ($false)
     Set-Location $pythonDir
     & gendef.exe "python27.dll" | OutVerbose
     & dlltool.exe "-d", "python27.def", "-l", "libpython27.dll.a" | OutVerbose
-    # copy lib to libs/
-    Copy-Item "libpython27.dll.a" "libs/"
+    # copy lib to lib/
+    Copy-Item "libpython27.dll.a" "lib/"
     # apply patch
     $patchPath = PathToUnix ([System.IO.Path]::GetFullPath("$builderPluginDir\windows-build-files\python-mingw32.patch"))
     & patch.exe "-p0", "-i", "$patchPath" | OutVerbose
