@@ -16,11 +16,16 @@ if "%1"=="msm" (
     SET MSIEXT=.msi
 )
 
+if NOT DEFINED WIN_WIX_SOURCES (
+    SET WIN_WIX_SOURCES=*.wxs
+    SET WIN_WIX_BUNDLES=*.wxb
+)
+
 :: Iterate over all installer source files.
-for /R %%f in (*.wxs) do call :build %%~nf
+for /R %%f in (%WIN_WIX_SOURCES%) do call :build %%~nf
 
 :: Build bundles if present.
-for /R %%f in (*.wxb) do call :bundle %%~nf
+for /R %%f in (%WIN_WIX_BUNDLES%) do call :bundle %%~nf
 
 :: Return 0 without checking errorlevel because wix warnings can cause it to return nonzero values.
 :: If there's an error we catch it below.

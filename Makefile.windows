@@ -16,6 +16,8 @@
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
 #    the default script builds all .wxs files with Wix,
 #    and .wxb files as Wix bundles (producing .exe)
+#  WIN_WIX_SOURCES - list of .wxs files to process with Wix Toolset
+#  WIN_WIX_BUNDLES - list of .wxb files to process with Wix Toolset
 #  WIN_PACKAGE_EXT - desired extension of the installer output
 #    "msi" (final installer package) or "msm" (merge module, default)
 #  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
