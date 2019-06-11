@@ -204,14 +204,14 @@ Write-Host "[*] Tmp dir: $tmpDir"
 
 # verification hashes are embedded here to keep the script self-contained
 $pkgName = "7zip"
-$url = "http://downloads.sourceforge.net/sevenzip/7za920.zip"
+$url = "https://downloads.sourceforge.net/sevenzip/7za920.zip"
 $file = DownloadFile $url
 VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0" "SHA1"
 UnpackZip $file $tmpDir
 $7zip = Join-Path $tmpDir "7za.exe"
 
 $pkgName = "msys2"
-$url = "http://downloads.sourceforge.net/msys2/Base/x86_64/msys2-base-x86_64-20190524.tar.xz"
+$url = "https://downloads.sourceforge.net/msys2/Base/x86_64/msys2-base-x86_64-20190524.tar.xz"
 $file = DownloadFile $url
 VerifyFile $file "cfe5035b1b81b43469d16bfc23be8006b9a44455" "SHA1"
 UnpackTar7z $file $tmpDir
