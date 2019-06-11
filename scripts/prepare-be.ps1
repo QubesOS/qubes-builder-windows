@@ -177,14 +177,16 @@ Function Unpack7z($archivePath, $log, $targetDir)
     & $7zip $arg | Out-File $log
 }
 
-Function UnpackTgz($archivePath, $log, $targetDir)
+Function UnpackTar7z($filePath, $destinationDir)
 {
-    $srcDir = [System.IO.Path]::GetDirectoryName($archivePath)
-    $arg = "x", "-y", "-o$srcDir", $archivePath # extract .tar to where .tar.gz is
-    & $7zip $arg | Out-File $log
-    $archivePath = $archivePath.Substring(0, $archivePath.Length-3) # strip .gz
-    $arg = "x", "-y", "-o$targetDir", $archivePath # extract the rest
-    & $7zip $arg | Out-File $log -Append
+    Write-Host "[*] Unpacking $filePath..."
+    # 7za doesn't support extracting from stdin
+    $arg = "x", "-y", "-o$destinationDir", $filePath
+    & $7zip $arg | Out-Null
+    
+    $tar = Get-ChildItem $filePath
+    $arg = "x", "-y", "-o$destinationDir", (Join-Path $tar.DirectoryName $tar.BaseName)
+    & $7zip $arg | Out-Null
 }
 
 Function UnpackZip($archivePath, $targetDir)
@@ -203,21 +205,11 @@ Function Unpack($archivePath, $targetDir)
     $log = "$logDir\extract-$pkgName.log"
     Write-Host "[*] Extracting $pkgName to $targetDir"
 
-    switch ((Get-Item $archivePath).Extension)
+    switch -wildcard ((Get-Item $archivePath).Name)
     {
-        ".gz" 
+        "*.tar.*" 
         {
-            # check if it's .tar.gz
-            if (($archivePath.Length -gt 7) -and ($archivePath.Substring($archivePath.Length-7) -eq ".tar.gz"))
-            {
-                UnpackTgz $archivePath $log $targetDir
-            }
-            else
-            {
-                Write-Host "[!] Unknown archive type: $archivePath"
-                FatalExit
-            }
-
+            UnpackTar7z $archivePath $log $targetDir
         }
         default { Unpack7z $archivePath $log $targetDir } # .7z or .zip are fine
     }
