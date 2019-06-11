@@ -27,7 +27,7 @@
 # This is intended as a base/clean environment. Component-specific scripts may copy it and modify according to their requirements.
 
 Param(
-    $builder,               # [optional] If specified, path to existing qubes-builder.
+    [string] $builder,      # [optional] If specified, path to existing qubes-builder.
     $GIT_SUBDIR = "QubesOS" # [optional] Same as in builder.conf
 )
 
