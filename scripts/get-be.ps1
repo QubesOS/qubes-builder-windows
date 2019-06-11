@@ -203,14 +203,6 @@ VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9"
 Unpack7z $file $tmpDir
 $msysDir = (Join-Path $tmpDir "msys")
 
-$pkgName = "mingw64"
-$url = "http://sourceforge.net/projects/mingwbuilds/files/host-windows/releases/4.8.1/64-bit/threads-win32/seh/x64-4.8.1-release-win32-seh-rev5.7z"
-$file = DownloadFile $url
-VerifyFile $file "53886dd1646aded889e6b9b507cf5877259342f2"
-$mingwArchive = $file
-Unpack7z $file $msysDir
-
-Move-Item (Join-Path $msysDir "mingw64") (Join-Path $msysDir "mingw")
 
 if (! $builder)
 {
