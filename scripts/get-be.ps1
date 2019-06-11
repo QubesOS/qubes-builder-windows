@@ -250,13 +250,15 @@ $msysDir = Join-Path $prereqsDir "msys"
 if ($verify)
 {
 	# install gpg if needed
-	$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GPG4Win"
+	$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GnuPG"
 	$gpgInstalled = Test-Path $gpgRegistryPath
 	if ($gpgInstalled)
 	{
 		$gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
+		$gpgBinDir = Join-Path $gpgDir "bin"
+		$gpg = Join-Path $gpgBinDir "gpg.exe"
 		# additional sanity check
-		if (!(Test-Path "$gpgDir\pub\gpg.exe"))
+		if (!(Test-Path $gpg))
 		{
 			$gpgInstalled = $false
 		}
@@ -269,15 +271,16 @@ if ($verify)
 	else
 	{
 		$pkgName = "GnuPG"
-		$url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
+		$url = "https://files.gpg4win.org/gpg4win-3.1.7.exe"
 		$file = DownloadFile $url
-		VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf" "SHA1"
-
+		VerifyFile $file "ba2c4ac4cf9a44e19611f86ece4bafa71a5ef02553a1652a73b9037c74608b69"
+		
 		Write-Host "[*] Installing GnuPG..."
 		$gpgDir = Join-Path $prereqsDir "gpg"
+		$gpgBinDir = Join-Path $gpgDir "pub"
 		Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
+		$gpg = Join-Path $gpgBinDir "gpg.exe"
 	}
-	$gpg = Join-Path $gpgDir "pub\gpg.exe"
 
 	Set-Location $builderDir
 
@@ -290,7 +293,7 @@ if ($verify)
 	& $gpg --import $file
 
 	# add gpg and msys to PATH
-	$env:Path = "$env:Path;$msysDir\bin;$gpgDir\pub"
+	$env:Path = "$env:Path;$msysDir\usr\bin;$gpgBinDir"
 
 	# verify qubes-builder tags
 	$tag = & git tag --points-at=HEAD | head -n 1
