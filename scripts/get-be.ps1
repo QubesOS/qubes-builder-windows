@@ -147,7 +147,7 @@ $Host.UI.RawUI.BufferSize.Width = 500
 
 if ($builder)
 {
-    # use pased value for already existing qubes-builder directory
+    # use passed value for already existing qubes-builder directory
     $builderDir = $builder
 
     $logFilePath = Join-Path (Join-Path $builderDir "build-logs") "win-initialize-be.log"
