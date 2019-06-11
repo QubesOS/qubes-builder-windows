@@ -310,10 +310,10 @@ if (!(Test-Path $7zip))
     UnpackZip $file $prereqsDir
 }
 
-$pkgName = "msys"
+$pkgName = "msys2"
 $file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
-$msysBin = "$depsDir\msys\bin"
+$msysBin = "$depsDir\msys64\usr\bin"
 
 $pkgName = "mingw64"
 $file = $global:pkgConf[$pkgName][2]
