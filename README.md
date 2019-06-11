@@ -5,34 +5,9 @@ Currently (Qubes R3) all Windows Tools code is built using Visual Studio 2013 an
 Builder scripts take care of getting/installing almost all needed prerequisites but some things need to be done by hand:
 
 1. Install Service Pack 1 for Windows 7. Without it Visual Studio won't install.
-2. Install Visual Studio 2017 Community [1]. Deselect all optional components. Install in a path without spaces or suffer frustration with makefiles. VS requires .NET Framework 4.5 but I think the setup includes that.
+2. Install Visual Studio 2017 Community [1]. Choose "Desktop development with C++" workload. Deselect all optional components. VS requires .NET Framework 4.5 but I think the setup includes that.
 3. Install Windows Driver Kit 10 [2].
-
-Manual environment setup
-------------------------
-
-You need to manually install:
-
- * Python3 (select to add it to system path)
- * Wix toolset
- * msys2
- * additional packages in msys2 environment, call: pacman -S git make p7zip diffutils tar
- * create `qubes-builder/chroot-win7x64/.be-prepared` file with 4th line being a path to wix installation and 5th line being a path to python3. Both paths needs to be msys2-encoded. First 3 lines are ignored. For example:
-
-```
-dummy1-mingw
-dummy2-python-dir
-dummy3-win-path
-/e/qubes-builder/chroot-win7x64/build-deps/wix
-/c/windows/py
-```
-
-Then proceed with standard way of obtaining qubes builder: https://www.qubes-os.org/doc/qubes-builder
-
-Automated environment setup
----------------------------
-
-*Note*: the get-be.ps1 script is currently broken (not updated for msys2).
+4. If you **previously** installed GPG4Win, please update to the latest version before continuing [3].
 
 If you're starting in a clean OS without Qubes Builder, the get-be powershell script initializes the build environment. Download it from here:
 
@@ -43,23 +18,53 @@ https://raw.githubusercontent.com/QubesOS/qubes-builder-windows/master/scripts/g
 
 The script:
 
-* Prepares msys/mingw environment
+* Prepares msys2 environment
 * Clones qubes-builder
-* Installs GPG and verifies code signatures
-* Adds a msys shell shortcut to the start menu
+* Installs GPG4Win and verifies code signatures
+* Adds a qubes-msys2 shell shortcut to the start menu and desktop
 * Generates a code signing certificate for Windows binaries (necessary for drivers). Use no password for testing.
+
+The first time qubes-msy2 runs, it will perform some initial setup and requires a restart. After restarting msys2, install the following required packages:
+
+`pacman -S diffutils git make patchutils`
 
 Building Qubes Windows Tools
 ============================
 
-Before building, prepare the appropriate `builder.conf` in the root of qubes-builder. Example config is provided as `windows-tools.conf`.
-From the newly launched msys shell run:
+Before building, prepare the appropriate `builder.conf` in the root of qubes-builder. Example config is provided as `windows-tools.conf`. Note particularly the following settings:
+
+* **DIST_DOM0, DISTS_VM**: win7x64, win10x64, etc.
+* **VS_PATH**: this path should be free of spaces, but there is a trick. You can convert the full path to a "short" DOS-style path using a Windows command prompt or batch file like this:
+
+    ```
+    for %A in ("C:\Program Files (x86)\Microsoft Visual Studio\2017\Community") do @echo %~sA
+
+    Result: C:\PROGRA~2\MIB055~1\2017\COMMUN~1
+    ```
+        
+* **WIN_CERT_FILENAME, WIN_CERT_PUBLIC_FILENAME**: full paths to `qubes-builder\qwt.pfx` and `qubes-builder\qwt.cer` created earlier by `get-be.ps1`.
+
+
+From the newly launched msys2 shell run:
 
 * `make get-sources`
-* `make qubes`
+
+This will download remaining dependencies and required QubesOS repos, verifying their signatures. However, it's necessary to download some additional submodules for vmm-xen-windows-pvdrivers:
+
+```
+cd qubes-src/vmm-xen-windows-pvdrivers
+make get-sources
+cd ../../
+```
+
+Finally, build the QWT installer:
+
+`make qubes`
 
 The finished installer will be in `qubes-src\installer-qubes-os-windows-tools`.
 
 [1] https://www.visualstudio.com/en-us/products/visual-studio-community-vs.aspx
 
 [2] https://www.microsoft.com/en-us/download/details.aspx?id=42273
+
+[3] https://www.gpg4win.org/
