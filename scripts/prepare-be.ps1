@@ -217,7 +217,7 @@ Function Unpack($archivePath, $targetDir)
 
 Function PathToUnix($path)
 {
-    # converts windows path to msys/mingw path
+    # converts windows path to msys2 path
     $path = $path.Replace('\', '/')
     $path = $path -replace '^([a-zA-Z]):', '/$1'
     return $path
@@ -315,65 +315,6 @@ $file = $global:pkgConf[$pkgName][2]
 Unpack $file $depsDir
 $msysBin = "$depsDir\msys64\usr\bin"
 
-$pkgName = "mingw64"
-$file = $global:pkgConf[$pkgName][2]
-Unpack $file $depsDir
-$mingw = "$depsDir\mingw64"
-$mingwUnix = PathToUnix $mingw
-
-# some packages look for cc instead of gcc
-# need admin for mklink so just copy instead
-Copy-Item "$mingw\bin\gcc.exe" "$mingw\bin\cc.exe"
-
-# apply patch for bugged strsafe.h
-$patchPath = "$builderPluginDir\windows-build-files\mingw-strsafe.patch"
-Copy-Item $patchPath $chrootDir
-Push-Location
-Set-Location $chrootDir
-& patch.exe "-p0", "-i", "$patchPath" | OutVerbose
-Pop-Location
-
-if ($false)
-{
-    $pkgName = "libiconv"
-    $file = $global:pkgConf[$pkgName][2]
-    Unpack $file $depsDir # unpacks to mingw64
-
-    # fix path in libiconv.la
-    $file = "$mingw\lib\libiconv.la"
-    Get-Content $file | Foreach-Object {$_ -replace "libdir='/mingw64/lib'", "libdir='$mingwUnix/lib'"} | Set-Content "$file.new"
-    Move-Item -Force "$file.new" $file
-
-    $pkgName = "libxml"
-    $file = $global:pkgConf[$pkgName][2]
-    $src = "$depsDir\$pkgName"
-    if (-not (Test-Path $src)) { New-Item $src -ItemType Directory | Out-Null }
-    Unpack $file $src
-    # move contents to mingw64 dir
-    Copy-Item -Path "$src\*" -Destination $mingw -Recurse -Force
-    Remove-Item $src -Recurse
-    # fix path in libxml2.la
-    $file = "$mingw\lib\libxml2.la"
-    Get-Content $file | Foreach-Object {$_ -replace "libdir='/usr/local/lib'", "libdir='$mingwUnix/lib'"} | Foreach-Object {$_ -replace "dependency_libs=' -L/usr/local/lib -lz /usr/local/lib/libiconv.la -lws2_32'", "dependency_libs=' -L$mingwUnix/bin -lzlib1 $mingwUnix/lib/libiconv.la -lws2_32'"} | Set-Content "$file.new"
-    Move-Item -Force "$file.new" $file
-    # fix path in libxml-2.0.pc
-    $file = "$mingw\lib\pkgconfig\libxml-2.0.pc"
-    Get-Content $file | Foreach-Object {$_ -replace 'prefix=/usr/local', "prefix=$mingwUnix" -replace 'Cflags: -I\${includedir}/libxml2 -I/usr/local/include', "Cflags: -I$mingwUnix/include/libxml2"} | Set-Content "$file.new"
-    Move-Item -Force "$file.new" $file
-    # copy from mingw to msys so pkg-config will read it
-    New-Item -ItemType Directory "$depsDir\msys\lib\pkgconfig" | Out-Null
-    Copy-Item $file "$depsDir\msys\lib\pkgconfig"
-
-    $pkgName = "zlib"
-    $file = $global:pkgConf[$pkgName][2]
-    Unpack $file $depsDir
-    # move contents to mingw64 dir
-    $src = "$depsDir\$pkgName"
-    Copy-Item -Path "$src\*" -Destination $mingw -Recurse -Force
-    Remove-Item $src -Recurse
-    Copy-Item "$mingw\bin\zlib1.dll" "$mingw\bin\libzlib1.dll"
-}
-
 $pkgName = "python27"
 $file = $global:pkgConf[$pkgName][2]
 $pythonDir = "$depsDir\python27"
@@ -381,99 +322,7 @@ InstallMsi $file "TARGETDIR" "$pythonDir"
 $python = "$pythonDir\python.exe"
 
 # add binaries to PATH
-$env:Path = "$msysBin;$mingw\bin;$pythonDir;$depsDir\wix\bin;$env:Path"
-
-if ($false)
-{
-    $pkgName = "portablexdr"
-    $file = $global:pkgConf[$pkgName][2]
-    Unpack $file $depsDir
-
-    # apply 64bit xdr patch
-    Copy-Item "$builderPluginDir\windows-build-files\portablexdr-4.9.1-64bit.patch" "$depsDir\portablexdr-4.9.1"
-    Push-Location
-    Set-Location "$depsDir\portablexdr-4.9.1"
-    & patch.exe "-i", "portablexdr-4.9.1-64bit.patch" | OutVerbose
-    Pop-Location
-
-    Write-Host "[*] Building $pkgName..."
-    Push-Location
-    Set-Location "$depsDir\portablexdr-4.9.1"
-    & sh.exe "configure", "-C", "--prefix=$mingwUnix", "--build=x86_64-w64-mingw32" | Tee-Object -File "$logDir\build-configure-$pkgName.log" | OutVerbose
-    & make.exe | Tee-Object -File "$logDir\build-make-$pkgName.log" | OutVerbose
-    & make.exe "install" | Tee-Object -File "$logDir\build-install-$pkgName.log" | OutVerbose
-    Copy-Item config.h "$mingw\include\rpc\"
-    Pop-Location
-    Copy-Item "$mingw\bin\portable-rpcgen.exe" "$mingw\bin\rpcgen.exe"
-
-    Push-Location
-    Set-Location $depsDir
-    # setuptools install downloads archive to current dir, don't leave garbage outside of chroot
-    $pkgName = "setuptools"
-    Write-Host "[*] Installing $pkgName..."
-    $file = $global:pkgConf[$pkgName][2]
-    & $python $file | OutVerbose
-    Pop-Location
-
-    # prepare python dev files
-    Write-Host "[*] Preparing python dev files..."
-    Push-Location
-    Set-Location $pythonDir
-    & gendef.exe "python27.dll" | OutVerbose
-    & dlltool.exe "-d", "python27.def", "-l", "libpython27.dll.a" | OutVerbose
-    # copy lib to libs/
-    Copy-Item "libpython27.dll.a" "libs/"
-    # apply patch
-    $patchPath = PathToUnix ([System.IO.Path]::GetFullPath("$builderPluginDir\windows-build-files\python-mingw32.patch"))
-    & patch.exe "-p0", "-i", "$patchPath" | OutVerbose
-    Pop-Location
-
-    # copy python includes to mingw64
-    New-Item -ItemType Directory "$depsDir\mingw64\include\python2.7" | Out-Null
-    Copy-Item "$pythonDir\include\*" "$depsDir\mingw64\include\python2.7\" -Recurse
-
-    $pkgName = "psutil"
-    $file = $global:pkgConf[$pkgName][2]
-    # to install automatically we need a trick
-    # sources don't build with mingw
-    # this is an .exe installer that doesn't support silent installation 
-    # but it's a self-extracting archive so we use 7zip to extract it and copy files ourselves
-    Unpack $file $depsDir # extracted dir is PLATLIB
-
-    # similar thing with pywin32
-    $pkgName = "pywin32"
-    $file = $global:pkgConf[$pkgName][2]
-    Unpack $file $depsDir
-
-    Copy-Item -Recurse "$depsDir\PLATLIB\*" "$pythonDir\Lib\site-packages"
-
-    # copy scripts
-    Copy-Item -Recurse "$depsDir\SCRIPTS\*" "$pythonDir\Scripts"
-
-    # run pywin32's post-install script
-    Write-Host "[*] Running pywin32 postinstall script..."
-    & $python "$pythonDir\Scripts\pywin32_postinstall.py", "-install" | OutVerbose
-
-    # compile
-    & $python "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
-    & $python "-O", "-m", "compileall", "$pythonDir\Lib\site-packages" | OutVerbose
-    & $python "-m", "compileall", "$pythonDir\Scripts" | OutVerbose
-    & $python "-O", "-m", "compileall", "$pythonDir\Scripts" | OutVerbose
-
-    # install lxml, lockfile
-    Write-Host "[*] Installing lxml..."
-    & "$pythonDir\Scripts\easy_install.exe" lxml | OutVerbose
-    Write-Host "[*] Installing lockfile..."
-    & "$pythonDir\Scripts\easy_install.exe" lockfile | OutVerbose
-
-    # copy python-config. it uses PYTHON_DIR variable to determine python install location
-    Copy-Item "$builderPluginDir\windows-build-files\python-config" $pythonDir
-
-    # add dummy files required by installers if not already existing
-    New-Item -ItemType Directory "$pythonDir\Lib\site-packages\win32com\gen_py" -ErrorAction SilentlyContinue | Out-Null
-    New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\dicts.dat"  -ErrorAction SilentlyContinue | Out-Null
-    New-Item -ItemType File "$pythonDir\Lib\site-packages\win32com\gen_py\__init__.py"  -ErrorAction SilentlyContinue | Out-Null
-}
+$env:Path = "$msysBin;$pythonDir;$depsDir\wix\bin;$env:Path"
 
 $pkgName = "wix"
 $file = $global:pkgConf[$pkgName][2]
@@ -497,8 +346,8 @@ foreach ($dir in $pathDirs)
 }
 
 # mark chroot as prepared to not repeat everything on next build
-# save mingw path, python path and modified search path
+# save python path and modified search path
 $pythonUnix = PathToUnix $pythonDir
-Set-Content -Path $markerPath "$mingwUnix`n$pythonUnix`n$unixPath`n$depsDir\wix`n$python3"
+Set-Content -Path $markerPath "`n$pythonUnix`n$unixPath`n$depsDir\wix`n$python3"
 
 Write-Host "[=] Windows build environment prepared`n"
