@@ -94,21 +94,30 @@ Function PathToUnix($path)
     return $path
 }
 
-$sha1 = [System.Security.Cryptography.SHA1]::Create()
-Function GetHash($filePath)
+Function GetHash($filePath, $hasher)
 {
     $fs = New-Object System.IO.FileStream $filePath, "Open"
-    $hash = [BitConverter]::ToString($sha1.ComputeHash($fs)).Replace("-", "")
+    $hash = [BitConverter]::ToString($hasher.ComputeHash($fs)).Replace("-", "")
     $fs.Close()
     return $hash.ToLowerInvariant()
 }
 
-Function VerifyFile($filePath, $hash)
+Function VerifyFile($filePath, $hash, $algorithm)
 {
-    $fileHash = GetHash $filePath
+    if ($algorithm)
+    {
+        $algorithm = $algorithm.Replace("-", "").ToUpper()
+    }
+    switch ($algorithm)
+    {
+        "SHA1" { $hasher, $hasherName = [System.Security.Cryptography.SHA1]::Create(), "SHA-1" }
+        "SHA512" { $hasher, $hasherName = [System.Security.Cryptography.SHA512]::Create(), "SHA-512" }
+        default { $hasher, $hasherName = [System.Security.Cryptography.SHA256]::Create(), "SHA-256" }
+    }
+    $fileHash = GetHash $filePath $hasher
     if ($fileHash -ne $hash)
     {
-        Write-Host "[!] Failed to verify SHA-1 checksum of $filePath!"
+        Write-Host "[!] Failed to verify $hasherName checksum of $filePath!"
         Write-Host "[!] Expected: $hash, actual: $fileHash"
         Exit 1
     }
@@ -197,14 +206,14 @@ Write-Host "[*] Tmp dir: $tmpDir"
 $pkgName = "7zip"
 $url = "http://downloads.sourceforge.net/sevenzip/7za920.zip"
 $file = DownloadFile $url
-VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0"
+VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0" "SHA1"
 UnpackZip $file $tmpDir
 $7zip = Join-Path $tmpDir "7za.exe"
 
 $pkgName = "msys"
 $url = "http://downloads.sourceforge.net/project/mingwbuilds/external-binary-packages/msys%2B7za%2Bwget%2Bsvn%2Bgit%2Bmercurial%2Bcvs-rev13.7z"
 $file = DownloadFile $url
-VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9"
+VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9" "SHA1"
 Unpack7z $file $tmpDir
 $msysDir = (Join-Path $tmpDir "msys")
 
@@ -253,7 +262,7 @@ if ($verify)
 		$pkgName = "GnuPG"
 		$url = "http://files.gpg4win.org/gpg4win-2.2.1.exe"
 		$file = DownloadFile $url
-		VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf"
+		VerifyFile $file "6fe64e06950561f2183caace409f42be0a45abdf" "SHA1"
 
 		Write-Host "[*] Installing GnuPG..."
 		$gpgDir = Join-Path $prereqsDir "gpg"
