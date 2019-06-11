@@ -217,6 +217,16 @@ VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9" "SHA1"
 Unpack7z $file $tmpDir
 $msysDir = (Join-Path $tmpDir "msys")
 
+# msys2 no longer bundles git, instead we can use MinGit from git-for-windows
+$tmpGitDir = Join-Path $tmpDir "git"
+New-Item $tmpGitDir -ItemType Directory | Out-Null
+
+$pkgName = "MinGit"
+$url = "https://github.com/git-for-windows/git/releases/download/v2.21.0.windows.1/MinGit-2.21.0-64-bit.zip"
+$file = DownloadFile $url
+VerifyFile $file "bd91db55bd95eaa80687df28877e2df8c8858a0266e9c67331cfddba2735f25c"
+UnpackZip $file $tmpGitDir
+$gitPath = Join-Path $tmpGitDir "cmd\git.exe"
 
 if (! $builder)
 {
@@ -224,7 +234,6 @@ if (! $builder)
     $repo = "git://github.com/$GIT_SUBDIR/qubes-builder.git"
     $builderDir = Join-Path $scriptDir "qubes-builder"
     Write-Host "[*] Cloning qubes-builder to $builderDir"
-    $gitPath = Join-Path $msysDir "bin\git.exe"
     & $gitPath clone $repo $builderDir
 }
 
