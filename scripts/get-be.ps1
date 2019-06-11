@@ -23,7 +23,7 @@
 #
 # If launched outside of existing qubes-builder, clones it to current directory.
 # Existing qubes-builder location may be specified via `-builder <path>' option.
-# Build environment is contained in 'msys' directory created in qubes-builder/cache/windows-prereqs. It also contains mingw64.
+# Build environment is contained in 'msys64' directory created in qubes-builder/cache/windows-prereqs.
 # This is intended as a base/clean environment. Component-specific scripts may copy it and modify according to their requirements.
 
 Param(
@@ -88,7 +88,7 @@ Function UnpackTar7z($filePath, $destinationDir)
 
 Function PathToUnix($path)
 {
-    # converts windows path to msys/mingw path
+    # converts windows path to msys2 path
     $path = $path.Replace('\', '/')
     $path = $path -replace '^([a-zA-Z]):', '/$1'
     return $path
@@ -190,9 +190,9 @@ else # check if we're invoked from existing qubes-builder
     }
 }
 
-if ($builder -and (Test-Path (Join-Path $builderDir "cache\windows-prereqs\msys")))
+if ($builder -and (Test-Path (Join-Path $builderDir "cache\windows-prereqs\msys64")))
 {
-    Write-Host "[=] BE seems already initialized, delete cache\windows-prereqs\msys if you want to rerun this script."
+    Write-Host "[=] BE seems already initialized, delete cache\windows-prereqs\msys64 if you want to rerun this script."
     Exit 0
 }
 
@@ -210,12 +210,12 @@ VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0" "SHA1"
 UnpackZip $file $tmpDir
 $7zip = Join-Path $tmpDir "7za.exe"
 
-$pkgName = "msys"
-$url = "http://downloads.sourceforge.net/project/mingwbuilds/external-binary-packages/msys%2B7za%2Bwget%2Bsvn%2Bgit%2Bmercurial%2Bcvs-rev13.7z"
+$pkgName = "msys2"
+$url = "http://downloads.sourceforge.net/msys2/Base/x86_64/msys2-base-x86_64-20190524.tar.xz"
 $file = DownloadFile $url
-VerifyFile $file "ed6f1ec0131530122d00eed096fbae7eb76f8ec9" "SHA1"
-Unpack7z $file $tmpDir
-$msysDir = (Join-Path $tmpDir "msys")
+VerifyFile $file "cfe5035b1b81b43469d16bfc23be8006b9a44455" "SHA1"
+UnpackTar7z $file $tmpDir
+$msysDir = Join-Path $tmpDir "msys64"
 
 # msys2 no longer bundles git, instead we can use MinGit from git-for-windows
 $tmpGitDir = Join-Path $tmpDir "git"
@@ -238,14 +238,15 @@ if (! $builder)
 }
 
 $prereqsDir = Join-Path $builderDir "cache\windows-prereqs"
-Write-Host "[*] Moving msys to $prereqsDir..."
+Write-Host "[*] Moving msys2 to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
-# move msys/mingw to qubes-builder/cache/windows-prereqs, this will be the default "clean" environment
+# move msys2 to qubes-builder/cache/windows-prereqs, this will be the default "clean" environment
 # copy instead of move, sometimes windows defender locks executables for a while
 Copy-Item -Path $msysDir -Destination $prereqsDir -Recurse
 Copy-Item -Path $7zip -Destination $prereqsDir
-# update msys path
-$msysDir = Join-Path $prereqsDir "msys"
+# update msys2 path
+$msysDir = Join-Path $prereqsDir "msys64"
+$msysExe = (Join-Path $msysDir "msys2.exe")
 
 if ($verify)
 {
@@ -292,7 +293,7 @@ if ($verify)
 	$file = Join-Path $builderDir "qubes-developers-keys.asc"
 	& $gpg --import $file
 
-	# add gpg and msys to PATH
+	# add gpg and msys2 to PATH
 	$env:Path = "$env:Path;$msysDir\usr\bin;$gpgBinDir"
 
 	# verify qubes-builder tags
@@ -308,15 +309,14 @@ if ($verify)
 		Exit 1
 	}
 }
-# set msys to start in qubes-builder directory
+# set msys2 to start in qubes-builder directory
 $builderUnix = PathToUnix $builderDir
 $cmd = "cd $builderUnix"
 Add-Content (Join-Path $msysDir "etc\profile") "`n$cmd"
-# mingw/bin is in default msys' PATH
 
-# add msys shortcuts to desktop/start menu
-Write-Host "[*] Adding shortcuts to msys..."
-CreateShortcuts "qubes-msys.lnk" "$msysDir\msys.bat"
+# add msys2 shortcuts to desktop/start menu
+Write-Host "[*] Adding shortcuts to msys2..."
+CreateShortcuts "qubes-msys2.lnk" $msysExe
 
 # generate code signing certificate
 Write-Host "[*] Generating code-signing certificate (use no password)..."
@@ -334,7 +334,7 @@ Write-Host "[*] Cleanup"
 Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
 
 Write-Host "[=] Done"
-# start msys shell
-Start-Process -FilePath (Join-Path $msysDir "msys.bat")
+# start msys2 shell
+Start-Process -FilePath $msysExe
 
 Stop-Transcript
