@@ -146,10 +146,10 @@ PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
 endif
 
 # Set this way to have them converted to windows paths by msys
-QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W)
-QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/lib && cd $(CHROOT_DIR)/build-deps/lib && pwd -W)
+QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W 2>/dev/null)
+QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/lib && cd $(CHROOT_DIR)/build-deps/lib && pwd -W 2>/dev/null)
 # Workaround for msys path conversion
-TMP := $(shell cd $(TMP) && pwd -W | sed 's:/:\\\\:g')
+TMP := $(shell cd $(TMP) && pwd -W 2>/dev/null| sed 's:/:\\\\:g')
 TEMP := $(TMP)
 
 SIGNTOOL := "$(shell find "$(WDK10_PATH)" "$(WDK8_PATH)" "$(DDK_PATH)" -path "*/$(DDK_ARCH)/signtool.exe" 2>/dev/null |head -1)"
