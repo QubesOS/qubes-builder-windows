@@ -45,7 +45,7 @@ $builderPluginDir = $env:WINDOWS_PLUGIN_DIR
 $depsDir = [System.IO.Path]::GetFullPath("$chrootDir\build-deps")
 
 $scriptDir = "$builderPluginDir\scripts"
-$prereqsDir = "$builderDir\cache\windows-prereqs"  # place for downloaded installers/packages, they'll get copied/installed to proper chroots during the build process
+$prereqsDir = "${builderDir}cache\windows-prereqs"  # place for downloaded installers/packages, they'll get copied/installed to proper chroots during the build process
 $logDir = "$builderDir\build-logs"
 $msiToolsDir = "$scriptDir\msi-tools"
 $installedMsisFile = "$scriptDir\installed-msis" # guids/names of installed MSIs so we can easily uninstall them later (clean-be.ps1)
