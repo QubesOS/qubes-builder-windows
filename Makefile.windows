@@ -20,6 +20,7 @@
 #  WIN_WIX_BUNDLES - list of .wxb files to process with Wix Toolset
 #  WIN_PACKAGE_EXT - desired extension of the installer output
 #    "msi" (final installer package) or "msm" (merge module, default)
+#  WIN_OUTPUT_BIN - directory with output binaries (*.exe, other files)
 #  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
 #    relative to $(PACKAGE)
 #  WIN_OUTPUT_HEADERS - directory with includes for $(WIN_OUTPUT_LIBS),
@@ -148,6 +149,7 @@ endif
 # Set this way to have them converted to windows paths by msys
 QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W 2>/dev/null)
 QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/lib && cd $(CHROOT_DIR)/build-deps/lib && pwd -W 2>/dev/null)
+QUBES_BIN = $(shell mkdir -p $(CHROOT_DIR)/build-deps/bin && cd $(CHROOT_DIR)/build-deps/bin && pwd -W 2>/dev/null)
 # Workaround for msys path conversion
 TMP := $(shell cd $(TMP) && pwd -W 2>/dev/null| sed 's:/:\\\\:g')
 TEMP := $(TMP)
@@ -193,6 +195,9 @@ dist-build-dep:
 	@mkdir -p $(CHROOT_DIR)/build-deps/lib
 	@mkdir -p $(CHROOT_DIR)/build-deps/include
 	@for dep in $(WIN_BUILD_DEPS); do \
+		if [ -d $(BUILDER_REPO_DIR)/$$dep/bin ]; then \
+			cp -t $(CHROOT_DIR)/build-deps/bin $(BUILDER_REPO_DIR)/$$dep/bin/*; \
+		fi; \
 		if [ -d $(BUILDER_REPO_DIR)/$$dep/lib ]; then \
 			cp -t $(CHROOT_DIR)/build-deps/lib $(BUILDER_REPO_DIR)/$$dep/lib/*; \
 		fi; \
@@ -264,6 +269,13 @@ ifneq (,$(WIN_OUTPUT_HEADERS))
 	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_HEADERS)/*.h; do\
 		echo "      include/`basename $$file`" >&3 ;\
 		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/include/ $$file || exit 1;\
+	done
+endif
+ifneq (,$(WIN_OUTPUT_BIN))
+	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/bin
+	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_BIN)/*/*; do\
+		echo "      bin/`basename $$file`" >&3 ;\
+		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/bin/ $$file || exit 1;\
 	done
 endif
 
