@@ -40,6 +40,59 @@ Function IsAdministrator()
     $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)
 }
 
+Function CheckTLSVersion()
+{
+    Write-Host "[*] Checking .NET runtime security protocols..."
+    $oldSecurityProtocol = [Net.ServicePointManager]::SecurityProtocol
+    if ([Net.SecurityProtocolType]::Tls12)
+    {
+        if ($oldSecurityProtocol -eq 0)
+        {
+            # default starting with .NET 4.7
+            Write-Host "[=] Using OS default security protocols."
+        }
+        elseif ($oldSecurityProtocol -ge [Net.SecurityProtocolType]::Tls12)
+        {
+            Write-Host "[=] Found TLS 1.2 or later security protocol."
+        }
+        else
+        {
+            # add TLS 1.1 and 1.2 to list of enabled protocols
+            [Net.ServicePointManager]::SecurityProtocol = $oldSecurityProtocol -bor [Net.SecurityProtocolType]::Tls11 -bor [Net.SecurityProtocolType]::Tls12
+            Write-Host "[=] Enabled TLS 1.1 and 1.2 security protocols."
+        }
+    }
+    else
+    {
+        Write-Host "[*] Checking for security protocol extensions (hotfix kb3154518)..."
+        # add extensions for .NET 3.5 with hotfix kb3154518 applied
+        # https://docs.microsoft.com/en-us/dotnet/api/system.net.securityprotocoltype
+        $extensions=@'
+namespace System.Net
+{
+    public static class SecurityProtocolTypeExt
+    {
+        public const SecurityProtocolType Tls12 = (SecurityProtocolType)3072;
+        public const SecurityProtocolType Tls11 = (SecurityProtocolType)768;
+        public const SecurityProtocolType SystemDefault = (SecurityProtocolType)0;
+    }
+}
+'@
+        Add-Type -TypeDefinition $extensions
+        try
+        {
+            # only accepts single enum values
+            [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolTypeExt]::Tls12
+        }
+        catch [Exception]
+        {
+            Write-Host "[!] Required security protocols not supported! Please ensure all Windows updates have been installed, or install PowerShell 3.0 or later for TLS 1.2 support."
+            Exit 1
+        }
+        Write-Host "[=] Enabled TLS 1.2 security protocol extension."
+    }
+}
+
 Function DownloadFile($url, $fileName)
 {
     $uri = [System.Uri] $url
@@ -195,6 +248,8 @@ if ($builder -and (Test-Path (Join-Path $builderDir "cache\windows-prereqs\msys6
     Write-Host "[=] BE seems already initialized, delete cache\windows-prereqs\msys64 if you want to rerun this script."
     Exit 0
 }
+
+CheckTLSVersion
 
 $tmpDir = Join-Path $scriptDir "tmp"
 # delete previous tmp is exists
