@@ -181,11 +181,12 @@ Function UnpackTar7z($filePath, $destinationDir)
 {
     Write-Host "[*] Unpacking $filePath..."
     # 7za doesn't support extracting from stdin
-    $arg = "x", "-y", "-o$destinationDir", $filePath
+    $tarDir = (Get-ChildItem $filePath).DirectoryName
+    $tar = (Get-ChildItem $filePath).BaseName
+    $arg = "x", "-y", "-o$tarDir", $filePath
     & $7zip $arg | Out-Null
     
-    $tar = Get-ChildItem $filePath
-    $arg = "x", "-y", "-o$destinationDir", (Join-Path $tar.DirectoryName $tar.BaseName)
+    $arg = "x", "-y", "-o$destinationDir", (Join-Path $tarDir $tar)
     & $7zip $arg | Out-Null
 }
 
