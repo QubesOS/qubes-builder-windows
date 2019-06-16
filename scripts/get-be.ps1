@@ -258,31 +258,17 @@ Remove-Item -Recurse -Force $tmpDir -ErrorAction SilentlyContinue | Out-Null
 New-Item $tmpDir -ItemType Directory | Out-Null
 Write-Host "[*] Tmp dir: $tmpDir"
 
-# verification hashes are embedded here to keep the script self-contained
-$pkgName = "7zip"
-$url = "https://downloads.sourceforge.net/sevenzip/7za920.zip"
-$file = DownloadFile $url
-VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0" "SHA1"
-UnpackZip $file $tmpDir
-$7zip = Join-Path $tmpDir "7za.exe"
-
-$pkgName = "msys2"
-$url = "https://downloads.sourceforge.net/msys2/Base/x86_64/msys2-base-x86_64-20190524.tar.xz"
-$file = DownloadFile $url
-VerifyFile $file "cfe5035b1b81b43469d16bfc23be8006b9a44455" "SHA1"
-UnpackTar7z $file $tmpDir
-$msysDir = Join-Path $tmpDir "msys64"
-
 # msys2 no longer bundles git, instead we can use MinGit from git-for-windows
-$tmpGitDir = Join-Path $tmpDir "git"
-New-Item $tmpGitDir -ItemType Directory | Out-Null
+$gitDir = Join-Path $tmpDir "git"
+New-Item $gitDir -ItemType Directory | Out-Null
 
+# verification hashes are embedded here to keep the script self-contained
 $pkgName = "MinGit"
-$url = "https://github.com/git-for-windows/git/releases/download/v2.21.0.windows.1/MinGit-2.21.0-64-bit.zip"
+$url = "https://github.com/git-for-windows/git/releases/download/v2.22.0.windows.1/MinGit-2.22.0-64-bit.zip"
 $file = DownloadFile $url
-VerifyFile $file "bd91db55bd95eaa80687df28877e2df8c8858a0266e9c67331cfddba2735f25c"
-UnpackZip $file $tmpGitDir
-$gitPath = Join-Path $tmpGitDir "cmd\git.exe"
+VerifyFile $file "308ce95b7de5792bed9d56e1af5d2053052ea6347ea0021f74070056684ce3ee"
+UnpackZip $file $gitDir
+$gitPath = Join-Path $gitDir "cmd\git.exe"
 
 if (! $builder)
 {
@@ -293,78 +279,83 @@ if (! $builder)
     & $gitPath clone $repo $builderDir
 }
 
+if ($verify)
+{
+    # install gpg if needed
+    $gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GnuPG"
+    $gpgInstalled = Test-Path $gpgRegistryPath
+
+    if ($gpgInstalled)
+    {
+        Write-Host "[*] GnuPG is already installed."
+    }
+    else
+    {
+        $pkgName = "GnuPG"
+        $url = "https://files.gpg4win.org/gpg4win-3.1.9.exe"
+        $file = DownloadFile $url
+        VerifyFile $file "20f1d709f95d59f101744ad9e5ee5f1b6abea0d0e083102985b2385035117c59"
+
+        Write-Host "[*] Installing GnuPG..."
+        Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S") | Out-Null
+    }
+
+    $gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
+    $gpgBinDir = Join-Path $gpgDir "bin"
+    $gpg = Join-Path $gpgBinDir "gpg.exe"
+    # additional sanity check
+    if (!(Test-Path $gpg))
+    {
+        Write-Host "[!] GPG not found: '$gpg'!"
+        Exit 1
+    }
+
+    Set-Location $builderDir
+
+    Write-Host "[*] Importing Qubes OS signing keys..."
+    # import master qubes signing key
+    & $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0xDDFA1A3E36879494
+
+    # import other dev keys
+    DownloadFile "https://keys.qubes-os.org/keys/qubes-developers-keys.asc"
+    $file = Join-Path $tmpDir "qubes-developers-keys.asc"
+    & $gpg --import $file
+
+    # add gpg to PATH
+    $env:Path = "$env:Path;$gpgBinDir"
+
+    # verify qubes-builder tags
+    $tag = & $gitPath tag --points-at=HEAD | Select -First 1
+    $ret = & $gitPath tag -v $tag
+    if ($?)
+    {
+        Write-Host "[*] qubes-builder successfully verified."
+    }
+    else
+    {
+        Write-Host "[!] Failed to verify qubes-builder! Output:`n$ret"
+        Exit 1
+    }
+}
+
 $prereqsDir = Join-Path $builderDir "cache\windows-prereqs"
-Write-Host "[*] Moving msys2 to $prereqsDir..."
 New-Item -ItemType Directory $prereqsDir -ErrorAction SilentlyContinue | Out-Null
-# move msys2 to qubes-builder/cache/windows-prereqs, this will be the default "clean" environment
-# copy instead of move, sometimes windows defender locks executables for a while
-Copy-Item -Path $msysDir -Destination $prereqsDir -Recurse
-Copy-Item -Path $7zip -Destination $prereqsDir
-# update msys2 path
+
+$pkgName = "7zip"
+$url = "https://downloads.sourceforge.net/sevenzip/7za920.zip"
+$file = DownloadFile $url
+VerifyFile $file "9ce9ce89ebc070fea5d679936f21f9dde25faae0" "SHA1"
+UnpackZip $file $prereqsDir
+$7zip = Join-Path $prereqsDir "7za.exe"
+
+$pkgName = "msys2"
+$url = "https://downloads.sourceforge.net/msys2/Base/x86_64/msys2-base-x86_64-20190524.tar.xz"
+$file = DownloadFile $url
+VerifyFile $file "cfe5035b1b81b43469d16bfc23be8006b9a44455" "SHA1"
+UnpackTar7z $file $prereqsDir
 $msysDir = Join-Path $prereqsDir "msys64"
 $msysExe = (Join-Path $msysDir "msys2.exe")
 
-if ($verify)
-{
-	# install gpg if needed
-	$gpgRegistryPath = "HKLM:SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\GnuPG"
-	$gpgInstalled = Test-Path $gpgRegistryPath
-	if ($gpgInstalled)
-	{
-		$gpgDir = (Get-ItemProperty $gpgRegistryPath).InstallLocation
-		$gpgBinDir = Join-Path $gpgDir "bin"
-		$gpg = Join-Path $gpgBinDir "gpg.exe"
-		# additional sanity check
-		if (!(Test-Path $gpg))
-		{
-			$gpgInstalled = $false
-		}
-	}
-
-	if ($gpgInstalled)
-	{
-		Write-Host "[*] GnuPG is already installed."
-	}
-	else
-	{
-		$pkgName = "GnuPG"
-		$url = "https://files.gpg4win.org/gpg4win-3.1.7.exe"
-		$file = DownloadFile $url
-		VerifyFile $file "ba2c4ac4cf9a44e19611f86ece4bafa71a5ef02553a1652a73b9037c74608b69"
-		
-		Write-Host "[*] Installing GnuPG..."
-		$gpgDir = Join-Path $prereqsDir "gpg"
-		$gpgBinDir = Join-Path $gpgDir "pub"
-		Start-Process -FilePath $file -Wait -PassThru -ArgumentList @("/S", "/D=$gpgDir") | Out-Null
-		$gpg = Join-Path $gpgBinDir "gpg.exe"
-	}
-
-	Set-Location $builderDir
-
-	Write-Host "[*] Importing Qubes OS signing keys..."
-	# import master qubes signing key
-	& $gpg --keyserver hkp://keys.gnupg.net --recv-keys 0x36879494
-
-	# import other dev keys
-	$file = Join-Path $builderDir "qubes-developers-keys.asc"
-	& $gpg --import $file
-
-	# add gpg and msys2 to PATH
-	$env:Path = "$env:Path;$msysDir\usr\bin;$gpgBinDir"
-
-	# verify qubes-builder tags
-	$tag = & git tag --points-at=HEAD | head -n 1
-	$ret = & git tag -v $tag
-	if ($?)
-	{
-		Write-Host "[*] qubes-builder successfully verified."
-	}
-	else
-	{
-		Write-Host "[!] Failed to verify qubes-builder! Output:`n$ret"
-		Exit 1
-	}
-}
 # set msys2 to start in qubes-builder directory
 $builderUnix = PathToUnix $builderDir
 $cmd = "cd $builderUnix"
