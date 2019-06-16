@@ -366,16 +366,52 @@ Write-Host "[*] Adding shortcuts to msys2..."
 CreateShortcuts "qubes-msys2.lnk" $msysExe
 
 # generate code signing certificate
+# NOTE: makecert.exe is deprecated, and should eventually be replaced with
+#    New-SelfSignedCertificate commandlet from pkihelper module
 Write-Host "[*] Generating code-signing certificate (use no password)..."
-$wdkKey = "HKLM:SOFTWARE\Microsoft\Windows Kits\Installed Roots"
-$wdkPath = (Get-ItemProperty -Path $wdkKey).KitsRoot81
-$makecertPath = $(GetChildItem -Path $wdkPath -Filter makecert.exe -Recurse)
-$pvk2pfxPath = $(GetChildItem -Path $wdkPath -Filter pvk2pfx.exe -Recurse)
-$wdkPath = Join-Path $wdkPath "bin\x64\"
-echo $wdkPath
-& $makecertPath -sv $builderDir\qwt.pvk -n "CN=Qubes Test Cert" $builderDir\qwt.cer -r
-& $pvk2pfxPath -pvk $builderDir\qwt.pvk -spc $builderDir\qwt.cer -pfx $builderDir\qwt.pfx
-
+$winSdkKey = "HKLM:SOFTWARE\Microsoft\Windows Kits\Installed Roots"
+$certSuccess = $false
+if (Test-Path $winSdkKey)
+{
+    # prefer newest available SDK (Win10 are separated by version)
+    $sdkPaths = @()
+    foreach ($sdk in "KitsRoot10","KitsRoot81","KitsRoot")
+    {
+        if ($kitRoot = (Get-ItemProperty -Path $winSdkKey).$sdk)
+        {
+            if ($sdk -eq "KitsRoot10")
+            {
+                $sdkWin10 = Join-Path $kitRoot "bin"
+                foreach ($ver in (Get-Item -Path $winSdkKey).GetSubKeyNames() | Sort-Object -Descending)
+                {
+                    $sdkPaths += Join-Path (Join-Path $sdkWin10 $ver) "x64"
+                }
+            }
+            $sdkPaths += Join-Path $kitRoot "bin\x64"
+        }
+    }
+    foreach ($sdkPath in $sdkPaths)
+    {
+        if ($sdkPath -and (Test-Path $sdkPath))
+        {
+            $makecertPath = $(Get-ChildItem -Path $sdkPath -Filter makecert.exe).FullName
+            $pvk2pfxPath = $(Get-ChildItem -Path $sdkPath -Filter pvk2pfx.exe).FullName
+            if ($makecertPath -and $pvk2pfxPath -and (Test-Path $makecertPath) -and (Test-Path $pvk2pfxPath))
+            {
+                & $makecertPath -sv $builderDir\qwt.pvk -n "CN=Qubes Test Cert" $builderDir\qwt.cer -r
+                & $pvk2pfxPath -pvk $builderDir\qwt.pvk -spc $builderDir\qwt.cer -pfx $builderDir\qwt.pfx
+                $certSuccess = $true
+                Write-Host "[=] Certificate generated successfully with Windows SDK: '$sdkPath'"
+                break
+            }
+        }
+    }
+}
+if (! $certSuccess)
+{
+    Write-Host "[!] Windows SDK installation not found!"
+    Exit 1
+}
 # cleanup
 Write-Host "[*] Cleanup"
 Remove-Item $tmpDir -Recurse -Force -ErrorAction SilentlyContinue | Out-Null
