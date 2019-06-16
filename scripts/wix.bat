@@ -16,11 +16,16 @@ if "%1"=="msm" (
     SET MSIEXT=.msi
 )
 
+if NOT DEFINED WIN_WIX_SOURCES (
+    SET WIN_WIX_SOURCES=*.wxs
+    SET WIN_WIX_BUNDLES=*.wxb
+)
+
 :: Iterate over all installer source files.
-for /R %%f in (*.wxs) do call :build %%~nf
+for /R %%f in (%WIN_WIX_SOURCES%) do call :build %%~nf
 
 :: Build bundles if present.
-for /R %%f in (*.wxb) do call :bundle %%~nf
+for /R %%f in (%WIN_WIX_BUNDLES%) do call :bundle %%~nf
 
 :: Return 0 without checking errorlevel because wix warnings can cause it to return nonzero values.
 :: If there's an error we catch it below.
@@ -31,8 +36,8 @@ set FILENAME=%1
 set MSINAME=%FILENAME%%MSISUFFIX%
 set MSIOUT=%MSINAME%%MSIEXT%
 
-"%WIX%\candle" %FILENAME%.wxs -arch %MSIARCH% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll"
-"%WIX%\light" -o %MSIOUT% %FILENAME%.wixobj %DIFXLIB% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll"
+"%WIX%\candle" %FILENAME%.wxs -arch %MSIARCH% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll" -ext "%WIX%\WixUtilExtension.dll"
+"%WIX%\light" -o %MSIOUT% %FILENAME%.wixobj %DIFXLIB% -ext "%WIX%\WixUIExtension.dll" -ext "%WIX%\WixDifxAppExtension.dll" -ext "%WIX%\WixIIsExtension.dll" -ext "%WIX%\WixUtilExtension.dll"
 
 :: FIXME: This is not an ideal way to check for errors because the output file may be created
 :: even if wix fails to merge something in. We can't rely on wix warnings (errorlevel) because

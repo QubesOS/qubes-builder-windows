@@ -16,8 +16,11 @@
 #  WIN_PACKAGE_CMD - command to generate .msm/msi files
 #    the default script builds all .wxs files with Wix,
 #    and .wxb files as Wix bundles (producing .exe)
+#  WIN_WIX_SOURCES - list of .wxs files to process with Wix Toolset
+#  WIN_WIX_BUNDLES - list of .wxb files to process with Wix Toolset
 #  WIN_PACKAGE_EXT - desired extension of the installer output
 #    "msi" (final installer package) or "msm" (merge module, default)
+#  WIN_OUTPUT_BIN - directory with output binaries (*.exe, other files)
 #  WIN_OUTPUT_LIBS - directory with output libraries (both *.lib and *.dll),
 #    relative to $(PACKAGE)
 #  WIN_OUTPUT_HEADERS - directory with includes for $(WIN_OUTPUT_LIBS),
@@ -144,10 +147,11 @@ PREBUILD_ACTUAL_CMD += && $(WIN_PREBUILD_CMD)
 endif
 
 # Set this way to have them converted to windows paths by msys
-QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W)
-QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/libs && cd $(CHROOT_DIR)/build-deps/libs && pwd -W)
+QUBES_INCLUDES = $(shell mkdir -p $(CHROOT_DIR)/build-deps/include && cd $(CHROOT_DIR)/build-deps/include && pwd -W 2>/dev/null)
+QUBES_LIBS = $(shell mkdir -p $(CHROOT_DIR)/build-deps/lib && cd $(CHROOT_DIR)/build-deps/lib && pwd -W 2>/dev/null)
+QUBES_BIN = $(shell mkdir -p $(CHROOT_DIR)/build-deps/bin && cd $(CHROOT_DIR)/build-deps/bin && pwd -W 2>/dev/null)
 # Workaround for msys path conversion
-TMP := $(shell cd $(TMP) && pwd -W | sed 's:/:\\\\:g')
+TMP := $(shell cd $(TMP) && pwd -W 2>/dev/null| sed 's:/:\\\\:g')
 TEMP := $(TMP)
 
 SIGNTOOL := "$(shell find "$(WDK10_PATH)" "$(WDK8_PATH)" "$(DDK_PATH)" -path "*/$(DDK_ARCH)/signtool.exe" 2>/dev/null |head -1)"
@@ -186,13 +190,16 @@ endif
 
 
 dist-build-dep:
-	@rm -rf $(CHROOT_DIR)/build-deps/libs
+	@rm -rf $(CHROOT_DIR)/build-deps/lib
 	@rm -rf $(CHROOT_DIR)/build-deps/include
-	@mkdir -p $(CHROOT_DIR)/build-deps/libs
+	@mkdir -p $(CHROOT_DIR)/build-deps/lib
 	@mkdir -p $(CHROOT_DIR)/build-deps/include
 	@for dep in $(WIN_BUILD_DEPS); do \
-		if [ -d $(BUILDER_REPO_DIR)/$$dep/libs ]; then \
-			cp -t $(CHROOT_DIR)/build-deps/libs $(BUILDER_REPO_DIR)/$$dep/libs/*; \
+		if [ -d $(BUILDER_REPO_DIR)/$$dep/bin ]; then \
+			cp -t $(CHROOT_DIR)/build-deps/bin $(BUILDER_REPO_DIR)/$$dep/bin/*; \
+		fi; \
+		if [ -d $(BUILDER_REPO_DIR)/$$dep/lib ]; then \
+			cp -t $(CHROOT_DIR)/build-deps/lib $(BUILDER_REPO_DIR)/$$dep/lib/*; \
 		fi; \
 		if [ -d $(BUILDER_REPO_DIR)/$$dep/include ]; then \
 			cp -t $(CHROOT_DIR)/build-deps/include $(BUILDER_REPO_DIR)/$$dep/include/*; \
@@ -251,10 +258,10 @@ ifneq ($(WIN_PACKAGE_CMD),true)
 	done
 endif
 ifneq (,$(WIN_OUTPUT_LIBS))
-	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/libs
+	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/lib
 	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_LIBS)/*/*; do\
-		echo "      libs/`basename $$file`" >&3 ;\
-		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/libs/ $$file || exit 1;\
+		echo "      lib/`basename $$file`" >&3 ;\
+		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/lib/ $$file || exit 1;\
 	done
 endif
 ifneq (,$(WIN_OUTPUT_HEADERS))
@@ -262,6 +269,13 @@ ifneq (,$(WIN_OUTPUT_HEADERS))
 	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_HEADERS)/*.h; do\
 		echo "      include/`basename $$file`" >&3 ;\
 		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/include/ $$file || exit 1;\
+	done
+endif
+ifneq (,$(WIN_OUTPUT_BIN))
+	@mkdir -p $(BUILDER_REPO_DIR)/$(COMPONENT)/bin
+	@for file in $(CHROOT_DIR)/$(DIST_SRC)/$(PACKAGE)/$(WIN_OUTPUT_BIN)/*/*; do\
+		echo "      bin/`basename $$file`" >&3 ;\
+		mv -t $(BUILDER_REPO_DIR)/$(COMPONENT)/bin/ $$file || exit 1;\
 	done
 endif
 
