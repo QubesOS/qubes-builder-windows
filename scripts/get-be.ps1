@@ -102,8 +102,8 @@ Function DownloadFile($url, $fileName)
     
     try
     {
-	    $client = New-Object System.Net.WebClient
-	    $client.DownloadFile($url, $fullPath)
+        $client = New-Object System.Net.WebClient
+        $client.DownloadFile($url, $fullPath)
         $client.Dispose()
     }
     catch [Exception]
