@@ -367,7 +367,7 @@ CreateShortcuts "qubes-msys2.lnk" $msysExe
 
 # generate code signing certificate
 # NOTE: makecert.exe is deprecated, and should eventually be replaced with
-#    New-SelfSignedCertificate commandlet from pkihelper module
+#    New-SelfSignedCertificate commandlet from pkiclient module
 Write-Host "[*] Generating code-signing certificate (use no password)..."
 $winSdkKey = "HKLM:SOFTWARE\Microsoft\Windows Kits\Installed Roots"
 $certSuccess = $false
